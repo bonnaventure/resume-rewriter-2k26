@@ -1,31 +1,14 @@
-Below is a ready-to-use `skill.md` you can save for Qwen Coder.
-
-```md
-# Skill: Resume Rewriter for Job Descriptions
+# Skill: Batch Resume Rewriter for Job Scrape Data
 
 ## Skill Name
 
-`resume-rewriter`
+`batch-resume-rewriter`
 
 ## Description
 
-This skill directs Qwen Coder to find `resume-2026.md`, rewrite it for a specific job description file, and save the rewritten resume into the `/rewritten` folder.
+This skill directs Qwen Coder to find `resume-2026.md`, read job listings from `job-scrape.json`, and generate a tailored resume for each job listing. Each rewritten resume is saved into the `/rewritten` folder.
 
-Each job description is a Markdown file ending with `-jobDescription.md`.
-
-Example:
-
-```text
-atco-coordinator-jobDescription.md
-```
-
-The rewritten resume output file should use the same job description file name and append `-qwen.md`.
-
-Example:
-
-```text
-/rewritten/atco-coordinator-jobDescription-qwen.md
-```
+The skill processes all jobs found in `job-scrape.json` in a single run, creating one output file per job.
 
 The rewrite must follow the rules and parameters defined in `recruiter-rules.md`.
 
@@ -36,19 +19,19 @@ The rewrite must follow the rules and parameters defined in `recruiter-rules.md`
 This skill can be launched with prompts such as:
 
 ```text
-rewrite for atco-coordinator-jobDescription.md
+rewrite resumes for all jobs
 ```
 
-or more generally:
+or:
 
 ```text
-rewrite for <file-name>-jobDescription.md
+process job-scrape.json
 ```
 
-Example:
+or simply:
 
 ```text
-rewrite for atco-coordinator-jobDescription.md
+run batch resume rewriter
 ```
 
 ---
@@ -65,7 +48,7 @@ File name:
 resume-2026.md
 ```
 
-This is the master resume that will be rewritten.
+This is the master resume that will be rewritten for each job.
 
 ### 2. Recruiter Rules
 
@@ -77,59 +60,34 @@ recruiter-rules.md
 
 This file contains the parameters, constraints, tone, formatting rules, and rewriting instructions that must be followed.
 
-### 3. Job Description File
+### 3. Job Scrape Data
 
-File name pattern:
-
-```text
-*-jobDescription.md
-```
-
-Example:
+File name:
 
 ```text
-atco-coordinator-jobDescription.md
+job-scrape.json
 ```
 
-This file contains the job description that the resume should be tailored toward.
+This JSON file contains an array of job listings. Each job listing should include at minimum:
+- Company name
+- Job title
+- Job description text
+- Any other relevant metadata (location, posting date, etc.)
 
----
+Example structure:
 
-## Input Parsing
-
-When the user runs the skill, Qwen Coder should parse the job description file name from the prompt.
-
-Example user prompt:
-
-```text
-rewrite for atco-coordinator-jobDescription.md
+```json
+[
+  {
+    "company": "Example Corp",
+    "title": "Senior Marketing Manager",
+    "description": "Job description text here...",
+    "posted_date": "2026-01-15"
+  }
+]
 ```
 
-Qwen Coder should identify:
-
-```text
-atco-coordinator-jobDescription.md
-```
-
-as the target job description file.
-
-If the user provides only part of the file name, Qwen Coder should attempt to match it to a file ending in `-jobDescription.md`.
-
-Example:
-
-```text
-rewrite for atco-coordinator
-```
-
-Qwen Coder should look for:
-
-```text
-atco-coordinator-jobDescription.md
-```
-
-If multiple matching job description files are found, Qwen Coder should list the matches and ask the user to choose one.
-
-If no matching job description file is found, Qwen Coder should report that the file could not be found and list available files ending with `-jobDescription.md`.
+If `job-scrape.json` cannot be found, Qwen Coder should stop and report the error.
 
 ---
 
@@ -147,33 +105,21 @@ and:
 recruiter-rules.md
 ```
 
-If either file cannot be found, Qwen Coder should stop and clearly tell the user which required file is missing.
-
-Qwen Coder should also search for the requested job description file.
-
-The job description file may be located in the root directory or in a subfolder.
-
-If the user provides a path, use that path.
-
-Example:
+and:
 
 ```text
-rewrite for jobs/atco-coordinator-jobDescription.md
+job-scrape.json
 ```
 
-Qwen Coder should use:
+If any of these files cannot be found, Qwen Coder should stop and clearly tell the user which required file is missing.
 
-```text
-jobs/atco-coordinator-jobDescription.md
-```
-
-as the job description source file.
+The `job-scrape.json` file may be located in the root directory or in a subfolder. If the user provides a path, use that path.
 
 ---
 
-## Output File Rules
+## Output File Naming Convention
 
-The rewritten resume must be saved into a folder named:
+Each rewritten resume must be saved into a folder named:
 
 ```text
 /rewritten
@@ -181,34 +127,22 @@ The rewritten resume must be saved into a folder named:
 
 If the folder does not exist, Qwen Coder should create it.
 
-The output file name must be based on the job description file name.
-
-Take the job description file name and append `-qwen.md`.
-
-Example input job description file:
+The output file name must follow this format:
 
 ```text
-atco-coordinator-jobDescription.md
+Jaron-Whittingham-[Company]-[JobTitle]-[Date].md
 ```
 
-Example output file:
+Where:
+- `[Company]` is the company name from the job listing (spaces replaced with hyphens, special characters removed)
+- `[JobTitle]` is the job title from the job listing (spaces replaced with hyphens, special characters removed)
+- `[Date]` is the current date in YYYY-MM-DD format
+
+Example output file names:
 
 ```text
-/rewritten/atco-coordinator-jobDescription-qwen.md
-```
-
-If the job description file is located in a subfolder, only use the base file name for the output file.
-
-Example input:
-
-```text
-jobs/atco-coordinator-jobDescription.md
-```
-
-Example output:
-
-```text
-/rewritten/atco-coordinator-jobDescription-qwen.md
+Jaron-Whittingham-ExampleCorp-SeniorMarketingManager-2026-01-15.md
+Jaron-Whittingham-TechInc-DigitalContentSpecialist-2026-01-15.md
 ```
 
 If an output file already exists with the same name, Qwen Coder may overwrite it unless the user asks to preserve existing files.
@@ -219,56 +153,41 @@ If an output file already exists with the same name, Qwen Coder may overwrite it
 
 Qwen Coder must follow these steps in order:
 
-### Step 1: Identify the Job Description File
+### Step 1: Read Required Files
 
-Parse the user prompt to determine which `-jobDescription.md` file is being targeted.
-
-Validate that the file name ends with:
-
-```text
--jobDescription.md
-```
-
-If it does not, attempt to append or match the correct file name.
-
----
-
-### Step 2: Read the Recruiter Rules
-
-Read:
-
-```text
-recruiter-rules.md
-```
-
-This file defines the rewriting parameters.
-
-Qwen Coder must follow all instructions in `recruiter-rules.md`.
-
-If `recruiter-rules.md` is missing, stop and report the error.
-
----
-
-### Step 3: Read the Source Resume
-
-Read:
+Read the following files:
 
 ```text
 resume-2026.md
+recruiter-rules.md
+job-scrape.json
 ```
 
-This is the resume to be rewritten.
-
-If `resume-2026.md` is missing, stop and report the error.
+If any file is missing, stop and report the error.
 
 ---
 
-### Step 4: Read the Job Description
+### Step 2: Parse Job Listings
 
-Read the requested job description file.
+Parse the `job-scrape.json` file to extract all job listings.
+
+For each job listing, extract:
+- Company name
+- Job title
+- Job description text
+- Any other relevant information (requirements, qualifications, keywords, etc.)
+
+If the JSON structure differs from the expected format, attempt to adapt and extract relevant job information.
+
+---
+
+### Step 3: Process Each Job
+
+For each job listing in `job-scrape.json`, perform the following sub-steps:
+
+#### Sub-step 3a: Analyze the Job Description
 
 Extract relevant information such as:
-
 - Job title
 - Company name
 - Required qualifications
@@ -283,14 +202,11 @@ Extract relevant information such as:
 
 Do not fabricate requirements that are not present in the job description.
 
----
-
-### Step 5: Rewrite the Resume
+#### Sub-step 3b: Rewrite the Resume
 
 Rewrite `resume-2026.md` so that it is tailored to the job description.
 
 The rewrite must:
-
 - Follow all rules in `recruiter-rules.md`
 - Preserve truthful information from the original resume
 - Avoid fabricating jobs, degrees, certifications, employers, dates, or accomplishments
@@ -311,23 +227,34 @@ If `recruiter-rules.md` contains language rules, tone rules, or keyword rules, a
 
 If there is a conflict between the job description and `recruiter-rules.md`, follow `recruiter-rules.md`.
 
----
+#### Sub-step 3c: Generate Output File Name
 
-### Step 6: Create the Output File
+Create the output file name using the format:
 
-Create the `/rewritten` folder if it does not already exist.
+```text
+Jaron-Whittingham-[Company]-[JobTitle]-[Date].md
+```
+
+Sanitize the company name and job title by:
+- Replacing spaces with hyphens
+- Removing special characters except hyphens
+- Converting to title case or keeping original casing as appropriate
+
+Use the current date in YYYY-MM-DD format.
+
+#### Sub-step 3d: Save the Output File
 
 Save the rewritten resume to:
 
 ```text
-/rewritten/<job-description-file-name>-qwen.md
+/rewritten/Jaron-Whittingham-[Company]-[JobTitle]-[Date].md
 ```
 
-Example:
+---
 
-```text
-/rewritten/atco-coordinator-jobDescription-qwen.md
-```
+### Step 4: Create the Output Directory
+
+Create the `/rewritten` folder if it does not already exist.
 
 ---
 
@@ -338,7 +265,7 @@ Unless `recruiter-rules.md` specifies otherwise, the rewritten resume should be 
 A reasonable default structure is:
 
 ```md
-# Candidate Name
+# Jaron Whittingham
 
 ## Professional Summary
 
@@ -371,16 +298,10 @@ However, if `recruiter-rules.md` defines a different structure, Qwen Coder must 
 
 ## Optional Header Comment
 
-Unless forbidden by `recruiter-rules.md`, Qwen Coder may include a hidden Markdown comment at the top of the output file for traceability:
+Unless forbidden by `recruiter-rules.md`, Qwen Coder may include a hidden Markdown comment at the top of each output file for traceability:
 
 ```md
-<!-- Rewritten from resume-2026.md for atco-coordinator-jobDescription.md using recruiter-rules.md -->
-```
-
-Example:
-
-```md
-<!-- Rewritten from resume-2026.md for atco-coordinator-jobDescription.md using recruiter-rules.md -->
+<!-- Rewritten from resume-2026.md for [Company] - [Job Title] using recruiter-rules.md -->
 ```
 
 If `recruiter-rules.md` says not to include comments or metadata, do not include this comment.
@@ -402,60 +323,44 @@ Could not find recruiter-rules.md. Please make sure the file exists in the works
 ```
 
 ```text
-Could not find the requested job description file: atco-coordinator-jobDescription.md.
+Could not find job-scrape.json. Please make sure the file exists in the workspace.
 ```
 
-If no job description file is specified, Qwen Coder should ask the user which job description to use and list available files matching:
-
 ```text
-*-jobDescription.md
-```
-
-Example response:
-
-```text
-Please specify which job description file to use. Available files:
-
-- atco-coordinator-jobDescription.md
-- city-planner-jobDescription.md
-- grants-administrator-jobDescription.md
-
-Run the skill again using:
-
-rewrite for <file-name>-jobDescription.md
+job-scrape.json contains no valid job listings. Please check the file format.
 ```
 
 ---
 
 ## Completion Response
 
-After successfully writing the rewritten resume, Qwen Coder should respond with a brief confirmation.
+After successfully writing all rewritten resumes, Qwen Coder should respond with a brief confirmation.
 
 Example:
 
 ```text
-Resume rewritten successfully.
+Batch resume rewrite completed successfully.
 
 Source resume:
 resume-2026.md
 
-Job description:
-atco-coordinator-jobDescription.md
-
 Rules file:
 recruiter-rules.md
 
-Output file:
-/rewritten/atco-coordinator-jobDescription-qwen.md
+Job data file:
+job-scrape.json
+
+Jobs processed: 5
+
+Output files:
+- /rewritten/Jaron-Whittingham-ExampleCorp-SeniorMarketingManager-2026-01-15.md
+- /rewritten/Jaron-Whittingham-TechInc-DigitalContentSpecialist-2026-01-15.md
+- /rewritten/Jaron-Whittingham-StartupXYZ-MarketingDirector-2026-01-15.md
+- /rewritten/Jaron-Whittingham-BigCo-EcommerceLead-2026-01-15.md
+- /rewritten/Jaron-Whittingham-InnovationLabs-ContentStrategy-2026-01-15.md
 ```
 
-Optionally, Qwen Coder may include a short summary of the main changes made, such as:
-
-- Tailored professional summary
-- Reordered sections based on recruiter rules
-- Emphasized keywords from the job description
-- Adjusted tone or formatting
-- Reduced length to match recruiter rules
+Optionally, Qwen Coder may include a short summary of the main changes made across all resumes.
 
 ---
 
@@ -465,14 +370,15 @@ Qwen Coder must:
 
 1. Never modify `resume-2026.md` unless explicitly instructed to do so.
 2. Never modify `recruiter-rules.md`.
-3. Never modify the job description file.
-4. Only create or update the output file inside `/rewritten`.
-5. Always base the rewritten resume on `resume-2026.md`.
+3. Never modify `job-scrape.json`.
+4. Only create or update output files inside `/rewritten`.
+5. Always base the rewritten resumes on `resume-2026.md`.
 6. Always apply the instructions in `recruiter-rules.md`.
-7. Always tailor the resume to the selected `-jobDescription.md` file.
-8. Always use the correct output naming convention.
+7. Always tailor each resume to its corresponding job listing from `job-scrape.json`.
+8. Always use the correct output naming convention (Jaron-Whittingham-[Company]-[JobTitle]-[Date].md).
 9. Always create the `/rewritten` folder if it does not exist.
 10. Always stop if a required file is missing.
+11. Process all jobs in `job-scrape.json` in a single run.
 
 ---
 
@@ -483,78 +389,45 @@ Qwen Coder must:
 User prompt:
 
 ```text
-rewrite for atco-coordinator-jobDescription.md
+rewrite resumes for all jobs
 ```
 
 Qwen Coder should:
 
-1. Find `atco-coordinator-jobDescription.md`
+1. Read `job-scrape.json`
 2. Read `recruiter-rules.md`
 3. Read `resume-2026.md`
-4. Rewrite the resume according to the recruiter rules and job description
-5. Save the result to:
-
-```text
-/rewritten/atco-coordinator-jobDescription-qwen.md
-```
-
----
+4. For each job in `job-scrape.json`:
+   - Rewrite the resume according to the recruiter rules and job description
+   - Save the result to `/rewritten/Jaron-Whittingham-[Company]-[JobTitle]-[Date].md`
 
 ### Example 2
 
-User prompt:
+If `job-scrape.json` contains:
 
-```text
-rewrite for jobs/atco-coordinator-jobDescription.md
+```json
+[
+  {
+    "company": "Windmill Technologies",
+    "title": "Digital Marketing Lead",
+    "description": "We are seeking a Digital Marketing Lead..."
+  },
+  {
+    "company": "Ecommerce Plus",
+    "title": "Content Strategy Manager",
+    "description": "Join our team as a Content Strategy Manager..."
+  }
+]
 ```
 
-Qwen Coder should:
-
-1. Read:
+Qwen Coder should create:
 
 ```text
-jobs/atco-coordinator-jobDescription.md
+/rewritten/Jaron-Whittingham-WindmillTechnologies-DigitalMarketingLead-2026-01-15.md
+/rewritten/Jaron-Whittingham-EcommercePlus-ContentStrategyManager-2026-01-15.md
 ```
 
-2. Read:
-
-```text
-recruiter-rules.md
-```
-
-3. Read:
-
-```text
-resume-2026.md
-```
-
-4. Save the result to:
-
-```text
-/rewritten/atco-coordinator-jobDescription-qwen.md
-```
-
----
-
-### Example 3
-
-User prompt:
-
-```text
-rewrite for atco-coordinator
-```
-
-Qwen Coder should attempt to match:
-
-```text
-atco-coordinator-jobDescription.md
-```
-
-If found, it should proceed with the rewrite and save the output to:
-
-```text
-/rewritten/atco-coordinator-jobDescription-qwen.md
-```
+(assuming the current date is 2026-01-15)
 
 ---
 
@@ -564,12 +437,11 @@ A successful run must result in:
 
 - [ ] `resume-2026.md` located and read
 - [ ] `recruiter-rules.md` located and read
-- [ ] Requested `-jobDescription.md` file located and read
-- [ ] Resume rewritten according to `recruiter-rules.md`
-- [ ] Resume tailored to the target job description
+- [ ] `job-scrape.json` located and read
+- [ ] All job listings extracted from `job-scrape.json`
+- [ ] Resume rewritten for each job according to `recruiter-rules.md`
+- [ ] Each resume tailored to its corresponding job description
 - [ ] `/rewritten` folder created if missing
-- [ ] Output file saved with the correct name
-- [ ] Output file name ends with `-qwen.md`
+- [ ] Output files saved with the correct naming convention (Jaron-Whittingham-[Company]-[JobTitle]-[Date].md)
 - [ ] No required source files were modified
-- [ ] User receives a confirmation message with the output file path
-```
+- [ ] User receives a confirmation message with all output file paths
